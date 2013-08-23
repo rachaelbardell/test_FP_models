@@ -3,6 +3,8 @@ library(stringr)
 
 setwd("~/Documents/test_FP_models/Google_API")
 
+dir <- "~/Documents/test_FP_models/"
+
 # Cory's code to clean the text and use textcat to classify new tweets
 
 clean.text <- function(text){
@@ -48,7 +50,7 @@ clean.text <- function(text){
 }  
 
 # read the manually classified tweets
-df <- read.csv("~/Desktop/test_FP_models/fp_tweets.csv", stringsAsFactors=F)
+df <- read.csv(paste0(dir, "fp_tweets.csv"), stringsAsFactors=F)
 
 # do the preprocessing to the data. this needs to be done before any prediction
 # using the model that is created.
@@ -96,8 +98,9 @@ write.csv(export_train, file = 'exported_train_FP.csv', row.names = F, col.names
 write.csv(export_pred, file = 'exported_pred_FP.csv', row.names = F, col.names=FALSE)
 
 # import results from GoogleAPI
-GoogleAPI <- read.csv("/home/rachael/Documents/test_FP_models/Google_API/exported_pred_FP.csv", stringsAsFactors=F, header = F)
+GoogleAPI <- read.csv(paste0(dir, "Google_API/exported_pred_FP.csv"), stringsAsFactors=F, header = F)
 
+# same stats function as the one in create_model.R
 stats <- function(predictions, manual_class){
   # pred is the column name for the column of predicted classifications
   # man is the column name for the manual classified column
@@ -125,3 +128,4 @@ stats <- function(predictions, manual_class){
 stats_fp.model <- stats(pred, manual_class)
 # .7209 Accuracy, .7778 Sensitivity, .6667 Specificity
 stats_Google <- stats(V1, V2)
+# 

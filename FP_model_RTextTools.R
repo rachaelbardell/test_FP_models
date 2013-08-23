@@ -2,7 +2,9 @@ library(stringr)
 library(RTextTools)
 library(caret)
 
-tweets <- read.csv("~/Desktop/test_FP_models/fp_tweets.csv", stringsAsFactors=F, row.names=NULL)
+dir <- "~/Documents/test_FP_models/"
+
+tweets <- read.csv(paste0(dir, "fp_tweets.csv"), stringsAsFactors=F, row.names=NULL)
 
 tweet_text <- subset(tweets, select=c("text", "manual_class"), !is.na(manual_class) & text != "" & !duplicated(text), row.names=NULL)
 
@@ -30,23 +32,40 @@ analytics <- create_analytics(container, results)
 summary(analytics)
 # without removing stop words is about the same 
 
-confusionMatrix(manual_class$manual_class, results$SLDA_LABEL)
+test_set <- tweet_text[356:473,]
+
+confusionMatrix(test_set$manual_class, results$SLDA_LABEL, positive = "1")
 
 summaryPredictions <- create_scoreSummary(container, results)
 # creates a summary with the best label for each document
 # determined by highest algorithm certainty and the highest consensus
 
-confusionMatrix(summaryPredictions$BEST_PROB, tweet_text$manual_class, postitive = "1")
+confusionMatrix(test_set$manual_class, summaryPredictions$BEST_PROB,postitive = "1")
 # doesn't work... compute statistics manually below
 
-# returns the number of TRUE values
-A <- length(which(summaryPredictions$BEST_PROB == "1" & manual_class$manual_class == "1"))
-B <- length(which(summaryPredictions$BEST_PROB == "1" & manual_class$manual_class == "0")) # FP
-C <- length(which(summaryPredictions$BEST_PROB == "0" & manual_class$manual_class == "1")) # FN
-D <- length(which(summaryPredictions$BEST_PROB == "0" & manual_class$manual_class == "0"))
+stats <- function(predictions, manual_class){
+  # pred is the column name for the column of predicted classifications
+  # man is the column name for the manual classified column
+  
+  # following the labels of confusionMatrix from the caret package
+  # return the number of TRUE values
+  A <- length(which(manual_class == "1" & predictions == "1"))
+  B <- length(which(manual_class == "0" & predictions == "1"))
+  C <- length(which(manual_class == "1" & predictions == "0"))
+  D <- length(which(manual_class == "0" & predictions == "0"))
+  # Type I error: food poisoning tweet that model prediction classifies as 0
+  # Type II error: non-food poisoning tweet that model prediction classifies as 1
+  # A and D are correct classifications
+  # C is false negatives and B is false postivies
+  
+  Accuracy <- (A + D) / (A + B + C + D) # Accuracy
+  Sensitivity <- A / (A + C) # Sensitivity
+  Specificity <- D / (D + B) # Specificity
+  stats <- list(Accuracy, Sensitivity, Specificity)
+  names(stats) <- c("Accuracy", "Sensitivity", "Specificity")
+  
+  return(stats)
+}
 
-# following the methods of confusionMatrix from the caret package
-(A + D) / (A + B + C + D) # Accuracy
-A / (A + C) # Sensitivity
-D / (D + B) # Specificity
-# .6610 Accuracy, 6889 Sensitivity, .6438 Specificity 
+stats_RTextTools <- stats(test_set$manual_class, summaryPredictions$BEST_PROB)
+# .6610 Accuracy, .5438 Sensitivity, .7705 Specificity 

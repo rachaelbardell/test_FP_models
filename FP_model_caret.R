@@ -4,6 +4,8 @@ library(C50)
 library(caret)
 library(stringr)
 
+dir <- "~/Documents/test_FP_models/"
+
 clean.text <- function(text){
   # INPUT: Text to be "cleansed"
   # OUTPUT: Cleansed text
@@ -48,7 +50,7 @@ clean.text <- function(text){
 
 
 # manual_class==1 is good fp tweet, 0 is no good
-df <- read.csv("~/Desktop/test_FP_models/fp_tweets.csv", stringsAsFactors=F)
+df <- read.csv(paste0(dir ,"/fp_tweets.csv"), stringsAsFactors=F)
 df$text.cleansed <- sapply(df$text, clean.text)
 df$manual_class <- factor(df$manual_class)
 df <- subset(df, !is.na(manual_class), select=c("text.cleansed", "manual_class"))
@@ -107,6 +109,7 @@ svm <- train(manual_class ~ ., data=dtm.df.train, method="svmRadial", metric="Ka
 pred$svm <- predict(svm, dtm.df.test)
 confusionMatrix(pred$svm, dtm.df.test$manual_class, positive = "1")
 # .6768 Accuracy, .2049 Kappa, .2323 Sensitivity, .9451 Specificity
+# svm with boosting.. see what it is if its in book
 
 knn <- train(manual_class ~ ., data=dtm.df.train, method="knn", metric="Kappa",
             trControl = ctrl, tuneLength=10) # k defualts to 5
@@ -167,6 +170,10 @@ confusionMatrix(pred$best, dtm.df.test$manual_class, positive = "1")
 # .673 Accuracy, .1707 Kappa, .1616 Sensitivity, .9817 Specificity C50, rpart, rf/glmnet
 # .6882 Accuracy, .2383 Kappa, .2623 Sensitivity, .9451 Specificity C50/rpart, glmnet, svm
 # .6882 Accuracy, .2481 Kappa, .2727 Sensitivity, .9390 Specificity C50, rpart, glmnet, rf, svm
+
+# C50, rpart, and glmnet (or rf) is the best combination - high specificity, don't lose a significant amount of accuracy
+
+# of all the  models, combining three seems to give the best results... even better than the original model in create_model.R using textcat
 
 # want more false negatives than false positives (i.e. high specificity)
 # prefer more 1's classified as 0's than 0's (junk) getting through as 1's
